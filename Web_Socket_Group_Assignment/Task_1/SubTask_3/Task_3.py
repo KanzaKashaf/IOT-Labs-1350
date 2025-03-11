@@ -65,10 +65,30 @@ def read_dht_sensor():
         print("Failed to read DHT sensor:", e)
         return None, None
 
+#Displaying Msg on OLED
 def update_oled(message):
     oled.fill(0)
     oled.text(message, 0, 0)
     oled.show()
+
+# Function to decode URL-encoded strings
+def decode_url_encoded_string(s):
+    result = ""
+    i = 0
+    while i < len(s):
+        if s[i] == "%":
+            # Decode URL-encoded characters (e.g., %20 -> space)
+            hex_value = s[i+1:i+3]
+            result += chr(int(hex_value, 16))
+            i += 3
+        elif s[i] == "+":
+            # Replace '+' with space
+            result += " "
+            i += 1
+        else:
+            result += s[i]
+            i += 1
+    return result
 
 # Web server function
 def web_page():
@@ -87,18 +107,6 @@ def web_page():
                     .catch(error => console.error('Error fetching sensor data:', error));
             }
 
-            function sendText() {
-                const text = document.getElementById('textInput').value;
-                fetch('/display', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
-                })
-                .then(response => response.text())
-                .then(data => console.log(data))
-                .catch(error => console.error('Error sending text:', error));
-            }
-
             // Update sensor data every 2 seconds
             setInterval(updateSensorData, 2000);
         </script>
@@ -114,15 +122,17 @@ def web_page():
         <h2>Humidity: <span id="humidity">N/A</span></h2>
         <br>
         <h1>OLED Display</h1>
-        <form action="/"><input name="msg" type="text"><input type="submit" value="Send"></form>
-        
+        <form action="/" method="GET">
+            <input name="msg" type="text">
+            <input type="submit" value="Send">
+        </form>
     </body>
     </html>"""
     return html
 
 # Start web server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("0.0.0.0", 80))
+s.bind(("0.0.0.0",80))
 s.listen(5)
 
 while True:
@@ -142,8 +152,22 @@ while True:
         neo.write()            # write data to all pixels
     
     elif "msg=" in request:
-        msg = request.split("msg=")[1].split(" ")[0].replace("+", " ")
-        update_oled(msg)
+        try:
+            # Extract the query string from the request
+            parts = request.split(" ")
+            if len(parts) > 1:
+                path_and_query = parts[1]
+                query_parts = path_and_query.split("?")
+                if len(query_parts) > 1:
+                    query_string = query_parts[1]
+                    # Extract the "msg" parameter
+                    msg_parts = query_string.split("msg=")
+                    if len(msg_parts) > 1:
+                        msg = msg_parts[1].split("&")[0]  # Get the value of "msg"
+                        msg = decode_url_encoded_string(msg)  # Decode URL-encoded characters
+                        update_oled(msg)
+        except Exception as e:
+            print("Error parsing request:", e)
     
     if request.startswith("GET /sensor "):
         # Handle sensor data request
@@ -161,15 +185,3 @@ while True:
         conn.send(response)
     
     conn.close()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
