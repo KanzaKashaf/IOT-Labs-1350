@@ -49,7 +49,8 @@ def web_page():
     
     html = """<!DOCTYPE html>
     <html>
-    <head><meta charset="UTF-8">
+    <head>
+        <meta charset="UTF-8">
         <title>ESP32 OLED Display</title>
         <style>
             body {
