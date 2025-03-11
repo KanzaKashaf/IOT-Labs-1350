@@ -65,11 +65,9 @@ def read_dht_sensor():
         print("Failed to read DHT sensor:", e)
         return None, None
 
-# Function to display text on OLED
-def display_text(text):
-    print(f"Displaying text on OLED: {text}")  # Debugging
-    oled.fill(0)  # Clear the display
-    oled.text(text, 0, 0)  # Display text at (x=0, y=0)
+def update_oled(message):
+    oled.fill(0)
+    oled.text(message, 0, 0)
     oled.show()
 
 # Web server function
@@ -116,15 +114,15 @@ def web_page():
         <h2>Humidity: <span id="humidity">N/A</span></h2>
         <br>
         <h1>OLED Display</h1>
-        <input type="text" id="textInput" placeholder="Enter text to display">
-        <button onclick="sendText()">Display on OLED</button>
+        <form action="/"><input name="msg" type="text"><input type="submit" value="Send"></form>
+        
     </body>
     </html>"""
     return html
 
 # Start web server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("0.0.0.0",80))
+s.bind(("0.0.0.0", 80))
 s.listen(5)
 
 while True:
@@ -143,6 +141,10 @@ while True:
         neo[0] = (0, 0, 255)  # set the first pixel to blue
         neo.write()            # write data to all pixels
     
+    elif "msg=" in request:
+        msg = request.split("msg=")[1].split(" ")[0].replace("+", " ")
+        update_oled(msg)
+    
     if request.startswith("GET /sensor "):
         # Handle sensor data request
         temp, humidity = read_dht_sensor()
@@ -152,13 +154,6 @@ while True:
         sensor_data = {"temp": temp, "humidity": humidity}
         conn.send("HTTP/1.1 200 OK\nContent-Type: application/json\n\n")
         conn.send(json.dumps(sensor_data))
-    elif request.startswith("POST /display "):
-        # Handle text input for OLED display
-        content_length = int(request.split("Content-Length: ")[1].split("\r\n")[0])
-        post_data = conn.recv(content_length).decode()
-        text = json.loads(post_data)["text"]
-        display_text(text)  # Display the text on the OLED
-        conn.send("HTTP/1.1 200 OK\nContent-Type: text/plain\n\nText displayed on OLED")
     else:
         # Serve the main webpage
         response = web_page()
@@ -166,3 +161,15 @@ while True:
         conn.send(response)
     
     conn.close()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
