@@ -94,125 +94,297 @@ def blink_led(color, blink_count=5, delay=0.5):
 # HTML page with JavaScript for polling
 def web_page():
     html = """<!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>ESP32 Weather Station</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #1e1e2f;
-                color: #ffffff;
-                margin: 0;
-                padding: 20px;
-                text-align: center;
-            }
-            h1 {
-                color: #ff6f61;
-                font-size: 2.5em;
-                margin-bottom: 20px;
-            }
-            h2 {
-                color: #a8e6cf;
-                font-size: 1.8em;
-                margin: 10px 0;
-            }
-            .sensor-data {
-                background-color: #2e2e4a;
-                padding: 20px;
-                border-radius: 15px;
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-                display: inline-block;
-                margin-top: 20px;
-            }
-            .emoji {
-                font-size: 1.5em;
-            }
-            .alert {
-                font-size: 1.2em;
-                padding: 10px;
-                border-radius: 5px;
-                margin: 10px 0;
-            }
-            .alert.temp-low {
-                background-color: #008CBA; /* Blue */
-            }
-            .alert.temp-normal {
-                background-color: #FFD700; /* Yellow */
-            }
-            .alert.temp-high {
-                background-color: #FF0000; /* Red */
-                animation: blink 1s infinite;
-            }
-            .alert.humidity-dry {
-                background-color: #FFA500; /* Orange */
-            }
-            .alert.humidity-normal {
-                background-color: #4CAF50; /* Green */
-            }
-            .alert.humidity-high {
-                background-color: #800080; /* Purple */
-            }
-            @keyframes blink {
-                0% { opacity: 1; }
-                50% { opacity: 0; }
-                100% { opacity: 1; }
-            }
-        </style>
-        <script>
-            function updateSensorData() {
-                fetch('/sensor')
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('temp').innerText = data.temp + " °C 🌡";
-                        document.getElementById('humidity').innerText = data.humidity + " % 💧";
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Weather App</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #1e1e2f, #2e2e4a);
+        }
 
-                        // Temperature Alerts
-                        var tempAlertDiv = document.getElementById('temp-alert');
-                        if (data.temp < 25) {
-                            tempAlertDiv.innerHTML = '<div class="alert temp-low">🌡 Low Temperature! ❄</div>';
-                            fetch('/rgb?color=blue');
-                        } else if (data.temp >= 25 && data.temp <= 26) {
-                            tempAlertDiv.innerHTML = '<div class="alert temp-normal">🌡 Normal Temperature! 😊</div>';
-                            fetch('/rgb?color=yellow');
-                        } else if (data.temp >= 27) {
-                            tempAlertDiv.innerHTML = '<div class="alert temp-high">🌡 High Temperature! 🔥</div>';
-                            fetch('/rgb?color=red');
-                        }
+        /* Blurred Web Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e1e2f, #2e2e4a); /* Same as mobile frame */
+            filter: blur(5px); /* Slight blur */
+            z-index: -1;
+        }
 
-                        // Humidity Alerts
-                        var humidityAlertDiv = document.getElementById('humidity-alert');
-                        if (data.humidity < 50) {
-                            humidityAlertDiv.innerHTML = '<div class="alert humidity-dry">💧 Dry! 🏜</div>';
-                        } else if (data.humidity >= 50 && data.humidity < 70) {
-                            humidityAlertDiv.innerHTML = '<div class="alert humidity-normal">💧 Normal Humidity! 😊</div>';
-                        } else if (data.humidity >= 70) {
-                            humidityAlertDiv.innerHTML = '<div class="alert humidity-high">💧 High Humidity! 💦</div>';
-                        }
-                    })
-                    .catch(error => console.error('Error fetching sensor data:', error));
-            }
+        /* Mobile Frame */
+        .mobile-frame {
+            width: 90%;
+            max-width: 300px;
+            height: 500px; /* Reduced height to fit without scrolling */
+            background: #1e1e2f;
+            border-radius: 30px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            position: relative;
+            margin: 20px;
+        }
 
-            // Update sensor data every 2 seconds
-            setInterval(updateSensorData, 2000);
-        </script>
-    </head>
-    <body>
-        <h1>ESP32 Weather Station</h1>
-        <div class="sensor-data">
-            <h1>🌡 TEMPERATURE AND HUMIDITY 💧</h1>
-            <h2>Temp: <span id="temp">N/A</span></h2>
-            <h2>Humidity: <span id="humidity">N/A</span></h2>
-            <div id="temp-alert"></div>
-            <div id="humidity-alert"></div>
+        /* Backgrounds */
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: opacity 1s ease;
+        }
+
+        .day-sky {
+            background: linear-gradient(135deg, #87CEEB, #1E90FF);
+        }
+
+        .hot-sky {
+            background: linear-gradient(135deg, #FFA500, #FF4500);
+        }
+
+        .night-sky {
+            background: linear-gradient(135deg, #2F4F4F, #1E1E2F);
+        }
+
+        /* Graphics */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 1000px;
+            animation: moveClouds 20s linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 1000px;
+        }
+        .cloud::before {
+            width: 60px;
+            height: 60px;
+            top: -30px;
+            left: 10px;
+        }
+        .cloud::after {
+            width: 40px;
+            height: 40px;
+            top: -20px;
+            right: 10px;
+        }
+        .cloud.one {
+            width: 120px;
+            height: 40px;
+            top: 20%;
+            left: -150px;
+            animation-duration: 25s;
+        }
+        .cloud.two {
+            width: 150px;
+            height: 50px;
+            top: 40%;
+            right: -150px;
+            animation-duration: 30s;
+        }
+
+        .sun {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #FFD700;
+            animation: glow 2s infinite alternate;
+        }
+
+        .moon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #F0F0F0;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #F0F0F0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            box-shadow: 0 0 5px white;
+            animation: twinkle 2s infinite alternate;
+        }
+
+        @keyframes moveClouds {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 30px #FFD700; }
+            100% { box-shadow: 0 0 50px #FFD700; }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Content */
+        .content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+            padding: 60px 20px 20px; /* Adjusted padding-top to move text down */
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Added shadow */
+        }
+
+        h2 {
+            font-size: 1.2em;
+            margin: 5px 0;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Added shadow */
+        }
+
+        /* Alert Messages */
+        .alert {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            color: #1e1e2f;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.5s ease;
+            z-index: 3;
+        }
+
+        @keyframes slideUp {
+            0% { transform: translate(-50%, 100%); }
+            100% { transform: translate(-50%, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <!-- Backgrounds -->
+        <div class="background day-sky"></div>
+        <div class="background hot-sky" style="opacity: 0;"></div>
+        <div class="background night-sky" style="opacity: 0;"></div>
+
+        <!-- Graphics -->
+        <div class="cloud one"></div>
+        <div class="cloud two"></div>
+        <div class="sun"></div>
+        <div class="moon" style="opacity: 0;"></div>
+        <div class="star" style="top: 10%; left: 20%;"></div>
+        <div class="star" style="top: 30%; left: 50%;"></div>
+        <div class="star" style="top: 50%; left: 70%;"></div>
+
+        <!-- Content -->
+        <div class="content">
+            <h1>Weather Station</h1>
+            <h2>🌡 Temperature: <span id="temp">...</span></h2>
+            <h2>💧 Humidity: <span id="humidity">...</span></h2>
         </div>
-    </body>
-    </html>"""
+
+        <!-- Alert Messages -->
+        <div id="alert" class="alert" style="display: none;">Alert Message</div>
+    </div>
+
+    <script>
+        // Function to fetch sensor data and update the UI
+        function updateSensorData() {
+            fetch('/sensor') // Replace with your sensor data endpoint
+                .then(response => response.json())
+                .then(data => {
+                    const tempElement = document.getElementById('temp');
+                    const humidityElement = document.getElementById('humidity');
+                    const daySky = document.querySelector('.day-sky');
+                    const hotSky = document.querySelector('.hot-sky');
+                    const nightSky = document.querySelector('.night-sky');
+                    const sun = document.querySelector('.sun');
+                    const moon = document.querySelector('.moon');
+                    const alertElement = document.getElementById('alert');
+
+                    // Update Temperature and Humidity
+                    tempElement.innerText = ${data.temp}°C;
+                    humidityElement.innerText = ${data.humidity}%;
+
+                    // Change Background and Graphics based on Temperature
+                    if (data.temp === 25) {
+                        daySky.style.opacity = 1;
+                        hotSky.style.opacity = 0;
+                        nightSky.style.opacity = 0;
+                        sun.style.opacity = 1;
+                        moon.style.opacity = 0;
+                        alertElement.innerText = "🌤 Normal Temperature!";
+                    } else if (data.temp > 26) {
+                        daySky.style.opacity = 0;
+                        hotSky.style.opacity = 1;
+                        nightSky.style.opacity = 0;
+                        sun.style.opacity = 1;
+                        moon.style.opacity = 0;
+                        alertElement.innerText = "🔥 Hot Temperature!";
+                    } else if (data.temp < 25) {
+                        daySky.style.opacity = 0;
+                        hotSky.style.opacity = 0;
+                        nightSky.style.opacity = 1;
+                        sun.style.opacity = 0;
+                        moon.style.opacity = 1;
+                        alertElement.innerText = "❄ Cold Temperature!";
+                    }
+
+                    // Show Alert
+                    alertElement.style.display = 'block';
+                    setTimeout(() => {
+                        alertElement.style.display = 'none';
+                    }, 3000);
+                })
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+
+        // Fetch sensor data every 2 seconds
+        setInterval(updateSensorData, 2000);
+
+        // Initial fetch
+        updateSensorData();
+    </script>
+</body>
+</html>"""
     return html
 
 # Start web server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("0.0.0.0", 80))
+s.bind(("0.0.0.0",80))
 s.listen(5)
 
 while True:
