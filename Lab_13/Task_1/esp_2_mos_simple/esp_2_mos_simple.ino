@@ -6,7 +6,7 @@
 #define DHTTYPE DHT11    // DHT 22 (AM2302)
 #define WIFI_SSID "NTU FSD"
 #define WIFI_PASSWORD ""
-#define MQTT_SERVER "10.13.44.205"  // Replace with your Windows PC's IP address on LAN
+#define MQTT_SERVER "10.13.44.103"  // Replace with your Windows PC's IP address on LAN
 #define MQTT_PORT 1883
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -71,7 +71,7 @@ void loop() {
     String tempStr = String(temperature, 2);
     String humStr = String(humidity, 2);
 
-    client.publish("esp32/dht/temp", tempStr.c_str());
+    client.publis h("esp32/dht/temp", tempStr.c_str());
     client.publish("esp32/dht/hum", humStr.c_str());
 
     Serial.print("Published Temperature: ");
